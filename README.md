@@ -4,10 +4,15 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178c6?logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38bdf8?logo=tailwindcss)](https://tailwindcss.com/)
 [![NgRx](https://img.shields.io/badge/NgRx-SignalStore-ba2bd2?logo=ngrx)](https://ngrx.io/)
+[![Vercel](https://img.shields.io/badge/Deployed-Vercel-black?logo=vercel)](https://uk-energy-dashboard-gray.vercel.app/)
 
 A modern Angular 21+ dashboard displaying real-time UK electricity grid carbon intensity and generation mix data. Built as a portfolio demonstration for a **National Grid Angular UI Engineer** role, showcasing expertise in accessibility, modern Angular patterns, and clean architecture.
 
-## Demo
+## Live Demo
+
+**[View Live Demo](https://uk-energy-dashboard-gray.vercel.app/dashboard)**
+
+## Local Development
 
 ```bash
 npm install && npm start
@@ -20,7 +25,9 @@ npm install && npm start
 |---------|-------------|
 | **Real-time Data** | Live carbon intensity from the UK National Grid API |
 | **Generation Mix** | Interactive donut chart showing energy sources (wind, solar, gas, nuclear, etc.) |
-| **Regional Breakdown** | Carbon intensity for all 14 UK DNO regions |
+| **Regional Map** | Interactive Leaflet map with color-coded UK DNO regions |
+| **Historical Charts** | Weekly carbon intensity trends with year selector |
+| **Regional Breakdown** | Carbon intensity for all 14 UK DNO regions with detail modals |
 | **Accessibility First** | WCAG 2.1 AA compliant with comprehensive a11y features |
 | **Modern Angular** | Standalone components, signals, new control flow, OnPush |
 
@@ -31,6 +38,7 @@ npm install && npm start
 | **Angular 21** | Frontend framework with standalone components and signals |
 | **NgRx SignalStore** | Reactive state management with computed signals |
 | **Tailwind CSS 3** | Utility-first styling with custom design tokens |
+| **Leaflet** | Interactive maps for regional visualization |
 | **Storybook 10** | Component documentation and visual testing |
 | **Jest + Testing Library** | Unit testing with accessibility queries |
 | **RxJS** | Reactive data fetching and state updates |
@@ -337,8 +345,9 @@ All shared components have Storybook stories with:
 
 ## Future Enhancements
 
-- [ ] Historical data charts (24h, 7d trends)
-- [ ] Region detail modal with generation breakdown
+- [x] Historical data charts (weekly trends with year selector)
+- [x] Region detail modal with generation breakdown
+- [x] Interactive regional map with Leaflet
 - [ ] Push notifications for intensity changes
 - [ ] Offline support with service worker
 - [ ] E2E tests with Playwright
