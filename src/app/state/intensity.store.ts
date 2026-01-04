@@ -54,6 +54,74 @@ export const IntensityStore = signalStore(
     sortedRegions: computed(() =>
       [...store.regions()].sort((a, b) => a.intensity.forecast - b.intensity.forecast)
     ),
+    groupedRegions: computed(() => {
+      const regions = store.regions();
+      if (regions.length === 0) return [];
+
+      const groupConfig: { name: string; matcher: (r: RegionData) => boolean }[] = [
+        {
+          name: 'Great Britain',
+          matcher: (r) => r.shortname === 'GB',
+        },
+        {
+          name: 'National',
+          matcher: (r) => ['England', 'Scotland', 'Wales'].includes(r.shortname),
+        },
+        {
+          name: 'Scotland',
+          matcher: (r) =>
+            r.shortname !== 'Scotland' && (
+              r.shortname.toLowerCase().includes('scotland') ||
+              r.dnoregion.toLowerCase().includes('scotland')
+            ),
+        },
+        {
+          name: 'Wales',
+          matcher: (r) =>
+            r.shortname !== 'Wales' && (
+              r.shortname.toLowerCase().includes('wales') ||
+              r.dnoregion.toLowerCase().includes('wales')
+            ),
+        },
+        {
+          name: 'Northern England',
+          matcher: (r) =>
+            ['North West England', 'North East England', 'Yorkshire'].includes(r.shortname),
+        },
+        {
+          name: 'Midlands',
+          matcher: (r) =>
+            r.shortname.toLowerCase().includes('midlands'),
+        },
+        {
+          name: 'Southern England',
+          matcher: (r) =>
+            ['South East England', 'South West England', 'South England', 'East England', 'London'].includes(r.shortname),
+        },
+      ];
+
+      const groups: { name: string; regions: RegionData[] }[] = [];
+
+      for (const config of groupConfig) {
+        const matchingRegions = regions
+          .filter(config.matcher)
+          .sort((a, b) => a.intensity.forecast - b.intensity.forecast);
+        if (matchingRegions.length > 0) {
+          groups.push({ name: config.name, regions: matchingRegions });
+        }
+      }
+
+      // Add any remaining regions to "Other"
+      const assignedIds = new Set(groups.flatMap((g) => g.regions.map((r) => r.regionid)));
+      const otherRegions = regions
+        .filter((r) => !assignedIds.has(r.regionid))
+        .sort((a, b) => a.intensity.forecast - b.intensity.forecast);
+      if (otherRegions.length > 0) {
+        groups.push({ name: 'Other', regions: otherRegions });
+      }
+
+      return groups;
+    }),
   })),
   withMethods((store, carbonService = inject(CarbonIntensityService)) => ({
     loadCurrent: rxMethod<void>(
