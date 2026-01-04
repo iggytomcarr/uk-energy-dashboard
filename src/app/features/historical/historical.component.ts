@@ -1,6 +1,7 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, effect } from '@angular/core';
 import { HistoricalStore } from '@state/historical.store';
 import { PreferencesStore } from '@state/preferences.store';
+import { LiveAnnouncerService } from '@core/services/live-announcer.service';
 import { YearlyChartComponent } from '@shared/components/yearly-chart/yearly-chart.component';
 
 @Component({
@@ -137,6 +138,22 @@ import { YearlyChartComponent } from '@shared/components/yearly-chart/yearly-cha
 export class HistoricalComponent implements OnInit {
   readonly historicalStore = inject(HistoricalStore);
   readonly preferencesStore = inject(PreferencesStore);
+  private readonly liveAnnouncer = inject(LiveAnnouncerService);
+  private wasLoading = false;
+
+  constructor() {
+    // Announce when loading completes
+    effect(() => {
+      const isLoading = this.historicalStore.loading();
+      const hasData = this.historicalStore.hasData();
+      const year = this.historicalStore.selectedYear();
+
+      if (this.wasLoading && !isLoading && hasData) {
+        this.liveAnnouncer.announce(`Historical data for ${year} loaded successfully`);
+      }
+      this.wasLoading = isLoading;
+    });
+  }
 
   ngOnInit(): void {
     this.historicalStore.loadYear(this.historicalStore.selectedYear());

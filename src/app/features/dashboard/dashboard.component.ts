@@ -1,11 +1,13 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IntensityStore } from '@state/intensity.store';
 import { PreferencesStore } from '@state/preferences.store';
+import { LiveAnnouncerService } from '@core/services/live-announcer.service';
 import { IntensityBadgeComponent } from '@shared/components/intensity-badge/intensity-badge.component';
 import { GenerationMixChartComponent } from '@shared/components/generation-mix-chart/generation-mix-chart.component';
 import { RegionCardComponent } from '@shared/components/region-card/region-card.component';
 import { LoadingSkeletonComponent } from '@shared/components/loading-skeleton/loading-skeleton.component';
+import { FocusTrapDirective } from '@shared/directives/focus-trap.directive';
 import { RegionData } from '@core/models/carbon-intensity.models';
 
 @Component({
@@ -17,6 +19,7 @@ import { RegionData } from '@core/models/carbon-intensity.models';
     GenerationMixChartComponent,
     RegionCardComponent,
     LoadingSkeletonComponent,
+    FocusTrapDirective,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
@@ -173,6 +176,8 @@ import { RegionData } from '@core/models/carbon-intensity.models';
         >
           <div
             class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            appFocusTrap
+            (escapePressed)="selectedRegion.set(null)"
             (click)="$event.stopPropagation()"
           >
             <div class="p-6">
@@ -243,8 +248,23 @@ import { RegionData } from '@core/models/carbon-intensity.models';
 export class DashboardComponent implements OnInit {
   readonly intensityStore = inject(IntensityStore);
   readonly preferencesStore = inject(PreferencesStore);
+  private readonly liveAnnouncer = inject(LiveAnnouncerService);
 
   readonly selectedRegion = signal<RegionData | null>(null);
+  private wasLoading = false;
+
+  constructor() {
+    // Announce when loading completes
+    effect(() => {
+      const isLoading = this.intensityStore.loading();
+      const hasData = this.intensityStore.hasData();
+
+      if (this.wasLoading && !isLoading && hasData) {
+        this.liveAnnouncer.announce('Dashboard data loaded successfully');
+      }
+      this.wasLoading = isLoading;
+    });
+  }
 
   ngOnInit(): void {
     this.intensityStore.loadAll();

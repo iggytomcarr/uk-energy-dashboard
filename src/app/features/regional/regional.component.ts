@@ -1,9 +1,11 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal, effect } from '@angular/core';
 import { RegionalStore, SortOption } from '@state/regional.store';
 import { PreferencesStore } from '@state/preferences.store';
+import { LiveAnnouncerService } from '@core/services/live-announcer.service';
 import { RegionCardComponent } from '@shared/components/region-card/region-card.component';
 import { GenerationMixChartComponent } from '@shared/components/generation-mix-chart/generation-mix-chart.component';
 import { RegionalMapComponent } from '@shared/components/regional-map/regional-map.component';
+import { FocusTrapDirective } from '@shared/directives/focus-trap.directive';
 import { RegionData } from '@core/models/carbon-intensity.models';
 
 type ViewMode = 'map' | 'list';
@@ -11,7 +13,7 @@ type ViewMode = 'map' | 'list';
 @Component({
   selector: 'app-regional',
   standalone: true,
-  imports: [RegionCardComponent, GenerationMixChartComponent, RegionalMapComponent],
+  imports: [RegionCardComponent, GenerationMixChartComponent, RegionalMapComponent, FocusTrapDirective],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <main id="main-content" class="regional p-6 max-w-7xl mx-auto" [class]="preferencesStore.fontSizeClass()">
@@ -226,6 +228,8 @@ type ViewMode = 'map' | 'list';
         >
           <div
             class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            appFocusTrap
+            (escapePressed)="regionalStore.selectRegion(null)"
             (click)="$event.stopPropagation()"
           >
             <div class="p-6">
@@ -309,8 +313,24 @@ type ViewMode = 'map' | 'list';
 export class RegionalComponent implements OnInit {
   readonly regionalStore = inject(RegionalStore);
   readonly preferencesStore = inject(PreferencesStore);
+  private readonly liveAnnouncer = inject(LiveAnnouncerService);
 
   readonly viewMode = signal<ViewMode>('map');
+  private wasLoading = false;
+
+  constructor() {
+    // Announce when loading completes
+    effect(() => {
+      const isLoading = this.regionalStore.loading();
+      const hasData = this.regionalStore.hasData();
+
+      if (this.wasLoading && !isLoading && hasData) {
+        const count = this.regionalStore.regionCount();
+        this.liveAnnouncer.announce(`Regional data loaded. ${count} regions available.`);
+      }
+      this.wasLoading = isLoading;
+    });
+  }
 
   ngOnInit(): void {
     this.regionalStore.loadRegions();
