@@ -1,4 +1,4 @@
-import { Component, ChangeDetectionStrategy, inject, OnInit } from '@angular/core';
+import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { IntensityStore } from '@state/intensity.store';
 import { PreferencesStore } from '@state/preferences.store';
@@ -116,13 +116,24 @@ import { RegionData } from '@core/models/carbon-intensity.models';
               <app-loading-skeleton type="card" />
             }
           </div>
-        } @else if (intensityStore.sortedRegions().length) {
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            @for (region of intensityStore.sortedRegions(); track region.regionid) {
-              <app-region-card
-                [data]="region"
-                (viewDetails)="onViewRegionDetails($event)"
-              />
+        } @else if (intensityStore.groupedRegions().length) {
+          <div class="space-y-8">
+            @for (group of intensityStore.groupedRegions(); track group.name) {
+              <div>
+                <div class="flex items-center gap-4 mb-4">
+                  <h3 class="text-lg font-semibold text-gray-700">{{ group.name }}</h3>
+                  <div class="flex-1 h-px bg-gray-200"></div>
+                  <span class="text-sm text-gray-500">{{ group.regions.length }} region{{ group.regions.length !== 1 ? 's' : '' }}</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  @for (region of group.regions; track region.regionid) {
+                    <app-region-card
+                      [data]="region"
+                      (viewDetails)="onViewRegionDetails($event)"
+                    />
+                  }
+                </div>
+              </div>
             }
           </div>
         }
@@ -150,6 +161,65 @@ import { RegionData } from '@core/models/carbon-intensity.models';
           }
         </button>
       </div>
+
+      <!-- Region Detail Modal -->
+      @if (selectedRegion(); as region) {
+        <div
+          class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[1000]"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          (click)="closeModal($event)"
+        >
+          <div
+            class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+            (click)="$event.stopPropagation()"
+          >
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-4">
+                <h2 id="modal-title" class="text-2xl font-bold text-gray-900">
+                  {{ region.shortname }}
+                </h2>
+                <button
+                  type="button"
+                  class="p-2 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
+                  aria-label="Close modal"
+                  (click)="selectedRegion.set(null)"
+                >
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              <p class="text-gray-600 mb-6">{{ region.dnoregion }}</p>
+
+              <!-- Intensity Info -->
+              <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Carbon Intensity</h3>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <p class="text-sm text-gray-500">Forecast</p>
+                    <p class="text-2xl font-bold text-gray-900">{{ region.intensity.forecast }} <span class="text-sm font-normal">gCO2/kWh</span></p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-500">Level</p>
+                    <p class="text-2xl font-bold capitalize" [class]="getIntensityClass(region.intensity.index)">
+                      {{ region.intensity.index }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Generation Mix -->
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-3">Generation Mix</h3>
+                <app-generation-mix-chart [data]="region.generationmix" />
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </main>
   `,
   styles: [`
@@ -174,6 +244,8 @@ export class DashboardComponent implements OnInit {
   readonly intensityStore = inject(IntensityStore);
   readonly preferencesStore = inject(PreferencesStore);
 
+  readonly selectedRegion = signal<RegionData | null>(null);
+
   ngOnInit(): void {
     this.intensityStore.loadAll();
   }
@@ -183,6 +255,23 @@ export class DashboardComponent implements OnInit {
   }
 
   onViewRegionDetails(region: RegionData): void {
-    console.log('View details for region:', region);
+    this.selectedRegion.set(region);
+  }
+
+  closeModal(event: MouseEvent): void {
+    if (event.target === event.currentTarget) {
+      this.selectedRegion.set(null);
+    }
+  }
+
+  getIntensityClass(level: string): string {
+    const classes: Record<string, string> = {
+      'very low': 'text-green-600',
+      'low': 'text-green-500',
+      'moderate': 'text-yellow-600',
+      'high': 'text-orange-600',
+      'very high': 'text-red-600',
+    };
+    return classes[level] || 'text-gray-600';
   }
 }

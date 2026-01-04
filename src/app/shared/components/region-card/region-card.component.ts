@@ -1,6 +1,33 @@
-import { Component, ChangeDetectionStrategy, input, output } from '@angular/core';
+import { Component, ChangeDetectionStrategy, input, output, computed } from '@angular/core';
 import { RegionData } from '@core/models/carbon-intensity.models';
 import { IntensityBadgeComponent } from '../intensity-badge/intensity-badge.component';
+
+const DNO_LINKS: Record<string, string> = {
+  // Scottish Power Energy Networks
+  'SP Distribution': 'https://www.spenergynetworks.co.uk/',
+  'SP Manweb': 'https://www.spenergynetworks.co.uk/',
+  // Scottish and Southern Electricity Networks
+  'Scottish Hydro Electric Power Distribution': 'https://www.ssen.co.uk/',
+  // Northern Powergrid
+  'NPG North East': 'https://www.northernpowergrid.com/',
+  'NPG Yorkshire': 'https://www.northernpowergrid.com/',
+  // Electricity North West
+  'Electricity North West': 'https://www.enwl.co.uk/',
+  // UK Power Networks
+  'UKPN East': 'https://www.ukpowernetworks.co.uk/',
+  'UKPN London': 'https://www.ukpowernetworks.co.uk/',
+  'UKPN South East': 'https://www.ukpowernetworks.co.uk/',
+  // National Grid Electricity Distribution (formerly WPD)
+  'WPD South Wales': 'https://www.nationalgrid.com/electricity-distribution',
+  'WPD South West': 'https://www.nationalgrid.com/electricity-distribution',
+  'WPD East Midlands': 'https://www.nationalgrid.com/electricity-distribution',
+  'WPD West Midlands': 'https://www.nationalgrid.com/electricity-distribution',
+  // National/Country level
+  'GB': 'https://www.nationalgrideso.com/',
+  'England': 'https://www.nationalgrideso.com/',
+  'Scotland': 'https://www.nationalgrideso.com/',
+  'Wales': 'https://www.nationalgrideso.com/',
+};
 
 @Component({
   selector: 'app-region-card',
@@ -19,7 +46,22 @@ import { IntensityBadgeComponent } from '../intensity-badge/intensity-badge.comp
         >
           {{ data().shortname }}
         </h3>
-        <p class="text-sm text-gray-500">{{ data().dnoregion }}</p>
+        @if (dnoLink()) {
+          <a
+            [href]="dnoLink()"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="text-sm text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1"
+            [attr.aria-label]="'Visit ' + data().dnoregion + ' website (opens in new tab)'"
+          >
+            {{ data().dnoregion }}
+            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          </a>
+        } @else {
+          <p class="text-sm text-gray-500">{{ data().dnoregion }}</p>
+        }
       </header>
 
       <div class="mb-4">
@@ -88,4 +130,10 @@ import { IntensityBadgeComponent } from '../intensity-badge/intensity-badge.comp
 export class RegionCardComponent {
   readonly data = input.required<RegionData>();
   readonly viewDetails = output<RegionData>();
+
+  readonly dnoLink = computed(() => {
+    const region = this.data();
+    // Check by dnoregion name first, then by shortname for national entries
+    return DNO_LINKS[region.dnoregion] || DNO_LINKS[region.shortname] || null;
+  });
 }
