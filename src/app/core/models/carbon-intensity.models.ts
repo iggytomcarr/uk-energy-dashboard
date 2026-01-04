@@ -37,13 +37,16 @@ export interface RegionData {
 
 export interface RegionalResponse {
   data: Array<{
-    regionid: number;
-    dnoregion: string;
-    shortname: string;
-    data: Array<{
-      from: string;
-      to: string;
-      intensity: IntensityData;
+    from: string;
+    to: string;
+    regions: Array<{
+      regionid: number;
+      dnoregion: string;
+      shortname: string;
+      intensity: {
+        forecast: number;
+        index: IntensityLevel;
+      };
       generationmix: GenerationMix[];
     }>;
   }>;
@@ -83,4 +86,32 @@ export const FUEL_COLORS: Record<string, string> = {
 
 export function isRenewable(fuel: string): boolean {
   return ['biomass', 'hydro', 'solar', 'wind'].includes(fuel.toLowerCase());
+}
+
+// Historical data models
+export interface IntensityStats {
+  max: number;
+  average: number;
+  min: number;
+  index: IntensityLevel;
+}
+
+export interface HistoricalDataPoint {
+  from: string;
+  to: string;
+  intensity: IntensityStats;
+}
+
+export interface HistoricalStatsResponse {
+  data: HistoricalDataPoint[];
+}
+
+export interface WeeklyDataPoint {
+  weekNumber: number;
+  startDate: Date;
+  endDate: Date;
+  average: number;
+  min: number;
+  max: number;
+  index: IntensityLevel;
 }
